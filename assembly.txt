@@ -1,4 +1,10 @@
 // -- TAKE FIRST INPUT--
+// This was adapted from "sample code.txt"
+// First clear AC
+// Load INP to AC
+// Store the contents of AC to TWOASCII
+// This is because the first character inputted will be
+// the first character used (also seen in the design document)
 FST, SKI
     BUN FST
     CLA
@@ -13,6 +19,12 @@ SCD, SKI
     STA ONEASCII
 
 // -- CHECK IF FIRST INPUT IS A NUMBER --
+// First clear the input then load ONEASCII into AC
+// Subtract ONEASCII with 58 (ASCII ":").
+// If the result is negative, the character is pre-":"
+// on the ASCII table and therefore a character 0-9.
+// Jump to the corresponding addresses based on if it
+// is a number or letter.
 CLA
 LDA ONEASCII
 ADD HBOUND
@@ -20,12 +32,17 @@ SNA
 BUN FLETTER
 BUN FNUMBER
 
+// If the first number is 0-9, then subtract 48.
+// 0 ASCII is 48, 1 ASCII is 49, and so on.
+// This gives us the decimal representation of the digit.
 FNUMBER, CLA
     LDA ONEASCII
     ADD DECTODEC
     STA ONEDEC
     BUN SECINP
 
+// If the first number is A-F, subtract 55.
+// A ASCII is 65. Since A is equal to 10, subtract 55.
 FLETTER, CLA
     LDA ONEASCII
     ADD LETTODEC
@@ -33,6 +50,7 @@ FLETTER, CLA
     BUN SECINP
 
 // -- CHECK IF SECOND INPUT IS A NUMBER --
+// Do the same as above but for TWOASCII.
 SECINP, CLA
     LDA TWOASCII
     ADD HBOUND
@@ -53,10 +71,27 @@ SLETTER, CLA
     BUN ADDER
 
 // -- CONVERT HEX TO DEC --
+// Now that we have the decimal representation of each
+// hexidecimal input (ONEDEC and TWODEC), we can convert
+// these numbers to decimal.
+// First, load the first decimal into AC.
+// Then store this in DECINP, which will store the final
+// conversion.
 ADDER, CLA
     LDA ONEDEC
     STA DECINP
 
+// We want to "multiply" by 16. The basic computer has no
+// instruction for multiplication, so we will do a while
+// loop 16 times.
+// MULCOUNT will be the incrementor. Subtract 16 and check
+// if zero. If it is zero, we have looped 16 times and we
+// can now jump to finding the largest digit.
+// If not, load DECINP into AC then add the second digit.
+// Store the new value of DECINP.
+// Clear AC, load the incrementor into AC then increment.
+// Store the new value of the incrementor and jump to
+// the start of the loop.
 MULSTART, CLA
     LDA MULCOUNT
     ADD SIXTEEN
@@ -73,6 +108,19 @@ MULSTART, CLA
     BUN MULSTART
 
 // -- FIND LARGEST DIGIT --
+// This is a direct adaptation of the code provided in the 
+// design document. By loop subtracting by the dividend (10) 
+// and incrementing the a quotient value, we are essentially
+// dividing by 10 without using any direct division operators.
+// This is an algorithm adapted from the modulo replacement
+// pseudocode from the design document assignment instructions
+
+// If DECINP is not positive, we ran out of digits.
+// Jump to the address of OUTPUT.
+// SPA should skip the next instruction if positive.
+// Here, I first subtract by 1 (then restore by adding 1)
+// before testing SPA. This is because SPA says 0 is positive.
+// If DECINP test passes, initialize the QUOTIENT variable.
 DECLOOP, CLA
     LDA DECINP
     ADD NONE
@@ -84,6 +132,15 @@ DECLOOP, CLA
     LDA ZERO
     STA QUOTIENT
 
+// This is the nested while loop that essentially "divides"
+// the DECINP.
+// First subtract 10 and check if DECINP is positive with SPA.
+// If not, go to DECEND.
+// If it is, subtract 10 from the DIVIDEND and increment
+// the QUOTIENT. Store these updated values.
+// After storing the updated values, jump to DIVLOOP to 
+// loop for another iteration until the above breakout
+// condition is satisfied.
 DIVLOOP, CLA
     LDA DIVIDEND
     ADD TEN
@@ -99,6 +156,19 @@ DIVLOOP, CLA
     STA QUOTIENT
     BUN DIVLOOP
 
+// This is where the current digit is finally separated from
+// the chunk of converted decimal.
+// We store this value in CURRDEC.
+// We want to compare if CURRDEC > LARGESTDEC, so we can 
+// keep track of the largest digit across the loop.
+// We can do this by doing CURRDEC - LARGESTDEC > 0.
+// If this condition passes, then CURRDEC is larger.
+// For example, 5 - 3 = 2. 2 > 0 = True.
+// In order to subtract by LARGESTDEC, we need to get its
+// negative value. To get the negative of a number, we can
+// simply get it's complement + 1 in whatever base it is in.
+// This translates into CMA + INC.
+// Then we can add CURRDEC and compare which one is larger. 
 DECEND, CLA
     LDA DIVIDEND
     STA CURRDEC
@@ -112,16 +182,28 @@ DECEND, CLA
     BUN DECENDT
     BUN ISLARGER
 
+// If it is larger, we will jump here.
+// Here we will load the value of the CURRDEC and store it 
+// in LARGESTDEC for later comparison/output.
 ISLARGER, CLA
     LDA CURRDEC
     STA LARGESTDEC
 
+// Now at the end of the DECINP loop, we will set 
+// DECINP = QUOTIENT. This is because the quotient is the 
+// remainder.
+// For example, 190 -> Quotient => 90 & Dividend => 1.
+// From there, 90 -> Quotient => 0 & Dividend => 9.
+// Jump to the start of the loop to repeat with Quotient.
 DECENDT, CLA
     LDA QUOTIENT
     STA DECINP
     BUN DECLOOP
 
 // -- OUTPUT --
+// We have the largest digit. It is a number 0-9.
+// To convert a number 0-9 to ASCII, we can just add 48.
+// Load this value + 48 into AC and OUTput.
 OUTPUT, CLA
     LDA LARGESTDEC
     ADD DECTODECP
